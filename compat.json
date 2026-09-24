@@ -1,0 +1,98 @@
+{
+  "schema": "evernote-enex-to-md/compat/1",
+  "tool_version": "1.2",
+  "updated": "2026-09-21",
+  "how_to_use": [
+    "agent: 读本文件判断目标环境是否属于已验证组合；用 scripts/find_store.py --json 取目标机器实际的 store_layout/model_version 来对比。",
+    "若目标环境不在 verified 列表里，先跑 `enex_to_md.py <存档> --dry-run --json`，看 alignment.score 是否 >= 0.5 再决定是否转换。"
+  ],
+  "verified": [
+    {
+      "status": "verified",
+      "platform": "macOS",
+      "app": "印象笔记 Mac（Yinxiang）",
+      "bundle_id": "com.yinxiang.Mac",
+      "app_version": "9.8.7",
+      "build": "478777",
+      "enex_export_string": "Evernote Mac 9.8.7 (478777)",
+      "enex_format": "ENEX 3.0（<!DOCTYPE en-export SYSTEM \"http://xml.evernote.com/pub/evernote-export3.dtd\">）",
+      "content_encryption": "ENC0（<content encoding=\"base64:aes\">，AES-128-CBC + PBKDF2-HMAC-SHA256 50000 次）",
+      "store_layout": "accounts/<host>/<uid>/{localNoteStore/LocalNoteStore.sqlite, content/<ZLOCALUUID>/content.enml}",
+      "store_root_observed": "~/Library/Application Support/com.yinxiang.Mac/accounts/app.yinxiang.com/<uid>/（另有沙箱副本 ~/Library/Containers/com.yinxiang.Mac/Data/Library/Application Support/...）",
+      "coredata_model_version": "Unified_27_0",
+      "coredata_entities": 31,
+      "sqlite_tables": 34,
+      "key_tables": ["ZENNOTE", "ZENRESOURCE", "ZENNOTEBOOK", "ZENCLIENTPREFERENCE"],
+      "evidence": {
+        "title_and_created_alignment": "32/32",
+        "pkcs7_length_consistency": "32/32",
+        "attachment_hash_reference": "16/16",
+        "converted": "32 篇 Markdown + 19 个附件 + 00-索引.md，0 警告"
+      }
+    }
+  ],
+  "expected_compatible_untested": [
+    {
+      "scope": "印象笔记 Mac 其他 9.x 版本",
+      "reason": "同一 Core Data 模型族（Unified_* 标识）与同样的 content/<ZLOCALUUID>/content.enml 布局",
+      "risk": "低，但请先用 --dry-run 确认 alignment.score"
+    },
+    {
+      "scope": "Evernote 官方 Mac 客户端 10.x（Electron 版）",
+      "reason": "目录改为 ~/Library/Application Support/com.evernote.Evernote/，本地存储结构不同",
+      "risk": "中，自动发现可能列出该目录但没有 content/*.enml；未实测"
+    },
+    {
+      "scope": "Windows 版客户端",
+      "reason": "find_store.py 已覆盖 %APPDATA% / %LOCALAPPDATA% / Documents 探测",
+      "risk": "中，路径与字段名可能同名但未实测"
+    }
+  ],
+  "not_applicable": [
+    {
+      "case": "ENEX 1.x / 未加密存档",
+      "note": "正文是明文 <content>，不需要破解路径，直接 enex2md.py 即可"
+    },
+    {
+      "case": "只有加密存档 + 本机无客户端缓存 + 无口令",
+      "note": "只能走爆破（PBKDF2 5 万次迭代，单核约 1200 条/秒），强口令实际不可行"
+    },
+    {
+      "case": "笔记内的 en-crypt 内联加密段",
+      "note": "与原笔记口令无关的独立段落加密，任何情况下都解不开，转换时保留为占位符"
+    },
+    {
+      "case": "Linux 桌面",
+      "note": "无官方客户端 → 不存在本地明文缓存"
+    }
+  ],
+  "observed_store_variants": {
+    "note": "同一台机器上可能同时存在多个本地库：多个账号、沙箱（~/Library/Containers/...）与非沙箱各一份、以及客户端升级/迁移后残留的旧库。它们的 Core Data 模型版本与表数量都可能不同。**不要取第一个**，用 find_store.py 的 score 选（笔记数与 content/ 明文目录数一致者优先）。",
+    "samples": [
+      {
+        "coredata_model_version": "Unified_27_0",
+        "sqlite_tables": 34,
+        "content_dirs": 2828,
+        "role": "当前在用的库（非沙箱 Application Support），本次实测通过即为这一个"
+      },
+      {
+        "coredata_model_version": "Unified_24_0",
+        "sqlite_tables": 39,
+        "content_dirs": 2247,
+        "role": "同账号的沙箱残留旧库：仍能读出明文，但内容可能落后于在用库，评分会把它排在后面"
+      },
+      {
+        "coredata_model_version": "Unified_19_0",
+        "sqlite_tables": 33,
+        "content_dirs": null,
+        "role": "另一个账号的空库，没有 content/ 明文目录，不可用"
+      }
+    ]
+  },
+  "self_check": {
+    "is_archive_encrypted": "grep -c 'encoding=\"base64:aes\"' archive.notes   # >0 即加密",
+    "list_local_stores": "python3 scripts/find_store.py --json",
+    "fields_to_compare": ["model_version", "has_zenote", "content_dirs", "note_count"],
+    "alignment_gate": "enex_to_md.py 内部阈值 MIN_SCORE = 0.5（加密笔记命中率），低于则拒绝使用该库"
+  }
+}

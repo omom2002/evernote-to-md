@@ -1,0 +1,14 @@
+# evernote-enex-to-md —— 运行依赖
+#
+# 安装：
+#   python3 -m pip install -r requirements.txt
+#
+# 说明：
+#   pycryptodome  仅「口令解密」路径需要（ENC0 的 AES-128-CBC）
+#   beautifulsoup4 + lxml + markdownify  仅「ENML -> Markdown」渲染需要
+#
+# 只用 find_store.py / crack2md.py --check 做检查的话，一个都不装也能跑。
+pycryptodome>=3.19
+beautifulsoup4>=4.12
+lxml>=5.0
+markdownify>=0.11

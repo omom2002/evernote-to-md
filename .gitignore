@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# 转换产物（不要提交别人的笔记）
+转换结果/
+转换报告.json
+附件/
+00-索引.md
+
+# 存档本体：可能含私人笔记，默认不入库
+*.enex
+*.notes
+!scripts/selftest.notes
+
+# 系统 / 编辑器
+.DS_Store
+.idea/
+.vscode/
+*.swp
